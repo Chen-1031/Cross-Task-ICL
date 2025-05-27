@@ -15,7 +15,6 @@ python cross_icl.py -m  "meta-llama/Llama-2-7b-hf" -method "embsim" -k 1
 ```
 python cross_icl.py -m  "meta-llama/Llama-2-7b-hf" -method "graphsim" -k 1 -s 1122
 ```
-- As for **Zero-shot**, directly modify "demo = True" in `gt_labeling.py` as "demo = False"
 
 The parameters used in `cross_icl.py` are summarized as follows:
 
