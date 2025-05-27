@@ -11,6 +11,7 @@ import random
 import numpy as np
 import os, pickle
 from tqdm import tqdm
+import argparse
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer
 from intask_utils import create_new_dataset, pack_data
@@ -45,7 +46,7 @@ def predict_result(dataset_name, qa_data, model, model_name, device='cuda:0', k=
     if 'gpt' in model_name:
         from openai import OpenAI
         llm = OpenAI(
-            api_key='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')
+            api_key='YOUR_API_KEY')
 
         target_data = load_dataset('target', dataset_name, 'test')
         target_id = target_data['prompt_temp_id']
@@ -69,7 +70,7 @@ def predict_result(dataset_name, qa_data, model, model_name, device='cuda:0', k=
         preds = []
         gold_labels = []
         # for data in target_dataset:
-        for data in tqdm(target_dataset[:250],
+        for data in tqdm(target_dataset,
                          desc=f"Evaluating {dataset_name} "):
             t_data = data.copy()
             t_e = t_data['emb']
@@ -89,7 +90,7 @@ def predict_result(dataset_name, qa_data, model, model_name, device='cuda:0', k=
                 demo=demo)
 
             messages = [{"role": "user", "content": few_shot_prompt}]
-            completion = llm.chat.completions.create(model="gpt-3.5-turbo", messages=messages, n=1, max_tokens=5,
+            completion = llm.chat.completions.create(model=model_name, messages=messages, n=1, max_tokens=5,
                                                      stop=['--', '\n\n', ';', '#'], temperature=0)
             prediction = [choice.message.content for choice in completion.choices]
             ids.append(data['id'])
@@ -109,7 +110,7 @@ def predict_result(dataset_name, qa_data, model, model_name, device='cuda:0', k=
 
         df = pd.DataFrame(eval_dic)
         df = df.fillna('')
-        result_path = f"/home/zihan/CD_ICL/results/{dataset_name}_intask_gt_K{k}.csv"
+        result_path = f"/results/{dataset_name}_intask_gt_K{k}.csv"
         df.to_csv(result_path, index=False)
 
         acc = 0
@@ -206,21 +207,20 @@ def predict_result(dataset_name, qa_data, model, model_name, device='cuda:0', k=
         print(f"Acc for {dataset_name} is ", acc)
     return acc
 
-
+parser = argparse.ArgumentParser()
+parser.add_argument('-k', default=1, type=int)
+parser.add_argument('-m', default="meta-llama/Llama-2-7b-hf", type=str)
+parser.add_argument('-d', default="0", type=str)
+args = parser.parse_args()
 
 dataset_names=['ARC-Challenge', 'medmcqa','financial_phrasebank','sciq','social_i_qa']
-# dataset_name = 'financial_phrasebank'
-# dataset_name='social_i_qa'
-# dataset_name = 'ARC-Challenge'
-# dataset_name='medmcqa'
-# dataset_name='sciq'
+
 result={}
 for dataset_name in dataset_names:
     qa_data, prompt_id = pack_data(dataset_name,seed=42)
     prompt = prompt_temps_dic[prompt_id]
-    # TODO: before construct graph maybe random shuffle the queries first.
 
-    # Step 1: Compute Embeddings for (Query, Answer) Pairs
+
     query_choice_embeddings = []
     labels = []
     query_indices = []  # Track which query each answer belongs to
@@ -231,10 +231,10 @@ for dataset_name in dataset_names:
 
     np.random.seed(42)
 
-    model_name="meta-llama/Llama-2-13b-hf"
-    model_name="gpt-3.5-turbo"
-    acc=predict_result(dataset_name, qa_data, model, model_name, device='cuda:0', k=1)
+    model_name = args.m
+    acc=predict_result(dataset_name, qa_data, model, model_name, device=f'cuda:{args.d}', k=arg.k)
     result[dataset_name] = acc
+
 print(result)
 # Print resultss
 
