@@ -34,7 +34,7 @@ class GCN(nn.Module):
         return x
 
 
-def construct_task_graph(embeddings, weighted=False, top_k=10):
+def construct_task_graph(embeddings, weighted=False, top_k=20):
     n = len(embeddings)
     graph = nx.Graph()
     bar = tqdm(range(n), desc=f'construct graph')
@@ -44,8 +44,6 @@ def construct_task_graph(embeddings, weighted=False, top_k=10):
         else:
             graph.add_edge(i, i)
         cur_emb = embeddings[i].reshape(1, -1)
-        # cur_scores = np.sum(cosine_similarity(embeddings, cur_emb), axis=1)
-        # sorted_indices = np.argsort(cur_scores).tolist()[-top_k - 1:-1]
         cur_scores = F.cosine_similarity(cur_emb, embeddings)
         sorted_indices = torch.argsort(cur_scores, descending=True)[:top_k].numpy()
         for idx in sorted_indices:
@@ -61,11 +59,9 @@ def construct_task_graph(embeddings, weighted=False, top_k=10):
 
 
 
-def add_nodes(embeddings, graph, emd, weighted=False, top_k=10):
+def add_nodes(embeddings, graph, emd, weighted=False, top_k=20):
     new_idx = embeddings.shape[0]
     cur_emb = emd.reshape(1, -1)
-    # cur_scores = np.sum(cosine_similarity(embeddings, cur_emb), axis=1)
-    # sorted_indices = np.argsort(cur_scores).tolist()[-top_k - 1:-1]
     cur_scores = F.cosine_similarity(cur_emb, embeddings)
     sorted_indices = torch.argsort(cur_scores, descending=True)[:top_k].numpy()
     graph.add_edge(new_idx, new_idx)
