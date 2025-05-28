@@ -43,7 +43,6 @@ for dataset_name in dataset_names:
     qa_data, prompt_id = pack_data(dataset_name,seed=42)
     prompt = prompt_temps_dic[prompt_id]
 
-    # Step 1: Compute Embeddings for (Query, Answer) Pairs
     query_choice_embeddings = []
     labels = []
     query_indices = []  # Track which query each answer belongs to
@@ -59,7 +58,7 @@ for dataset_name in dataset_names:
 
         for choice in data["choices"]:
 
-            qa_pari_embed = model.encode(prompt.format(data['query'], data["choices"][choice]))  ##TODO: IF for different task
+            qa_pari_embed = model.encode(prompt.format(data['query'], data["choices"][choice]))  
 
             query_choice_embeddings.append(qa_pari_embed)
             query_indices.append(i)  # Store query ID
@@ -79,7 +78,6 @@ for dataset_name in dataset_names:
     labels = torch.tensor(labels, dtype=torch.long)
     labeled_mask = torch.tensor(labeled_mask, dtype=torch.bool)
 
-    # Step 2: Build Graph Edges (Positive & Negative)
     n_nodes = len(query_choice_embeddings)
     similarity_matrix = torch.tensor(cosine_similarity(query_choice_embeddings))
     threshold = 0.7  # Similarity threshold for positive edges
@@ -88,14 +86,14 @@ for dataset_name in dataset_names:
     negative_edges = []
 
     print("Constructing Graph")
-    # Create positive edges (Similarity-based edges)
+
     for i in range(n_nodes):
-        sorted_indices = torch.argsort(similarity_matrix[i], descending=True)[:15].numpy()
+        sorted_indices = torch.argsort(similarity_matrix[i], descending=True)[:20].numpy()
         for j in sorted_indices:
             if j != i:
                 positive_edges.append([i, j])
 
-    # Add negative edges (Mutual exclusion for answer choices of the same query)
+
     for i in range(len(qa_data)):
         answer_nodes = [idx for idx, q_idx in enumerate(query_indices) if q_idx == i]
         for j in range(len(answer_nodes)):
@@ -111,7 +109,7 @@ for dataset_name in dataset_names:
     positive_edges = torch.tensor(positive_edges, dtype=torch.long).t().contiguous()
     negative_edges = torch.tensor(negative_edges, dtype=torch.long).t().contiguous()
 
-    # Step 3: Define GNN Model with Positive and Negative Edge Influence
+
     class AnswerSelectionGNN(torch.nn.Module):
         def __init__(self, input_dim, hidden_dim, num_classes):
             super(AnswerSelectionGNN, self).__init__()
@@ -133,7 +131,6 @@ for dataset_name in dataset_names:
             return x
 
 
-    # Step 4: Train the GNN Model for Label Propagation
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     GNNmodel = AnswerSelectionGNN(input_dim=query_choice_embeddings.shape[1], hidden_dim=64, num_classes=2).to(device)
 
@@ -148,23 +145,13 @@ for dataset_name in dataset_names:
     optimizer = torch.optim.Adam(GNNmodel.parameters(), lr=0.005, weight_decay=5e-4)
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    lambda_neg = 0.4  # Strength of negative edge loss
+    lambda_neg = 0.4  
     print("Begin Training")
     for epoch in range(25):
         GNNmodel.train()
         optimizer.zero_grad()
 
         out = GNNmodel(query_choice_embeddings, positive_edges, negative_edges)
-        # print(out.shape)
-        # # Apply softmax across the four choices per query
-        # logits = out.view(len(qa_data), 4, -1)
-        # print(logits.shape)
-        # probs = F.softmax(logits, dim=1)
-        # print(probs.shape)
-        # print(probs.view(-1, 2).shape)
-        #
-        # # Compute loss only for labeled nodes
-        # loss = loss_fn(probs.view(-1, 2)[labeled_mask], labels[labeled_mask])
 
 
         probs = F.softmax(out)
@@ -185,7 +172,6 @@ for dataset_name in dataset_names:
         if epoch % 1 == 0:
             print(f"Epoch {epoch}: Loss = {final_loss.item()}")
 
-    # Step 5: Predict Labels for Unlabeled Queries
     GNNmodel.eval()
     output = GNNmodel(query_choice_embeddings, positive_edges, negative_edges)
     print(output.shape,query_choice_embeddings.shape)
