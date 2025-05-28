@@ -20,7 +20,6 @@ from intask_utils import predict_result, create_new_dataset, pack_data
 prompt_temps_dic = {
     '001': 'Premise: {} \nHypothesis: {} \nLabel:',
     '002': 'Question 1: {} \nQuestion 2: {} \nLabel:',
-    # '003': 'Context: {} \nQuestion: {} \nAnswer:',
     '003': 'Context: {}\nAnswer: {}',
     '004': 'Sentence: {} \nLabel: {}',
     '005': 'Question: {} \nAnswer: {}',
@@ -30,7 +29,6 @@ prompt_temps_dic = {
 query_temps_dic = {
     '001': 'Premise: {} \nHypothesis: {} \nLabel:',
     '002': 'Question 1: {} \nQuestion 2: {} \nLabel:',
-    # '003': 'Context: {} \nQuestion: {} \nAnswer:',
     '003': 'Context: {} \nAnswer:',
     '004': 'Sentence: {} \nLabel:',
     '005': 'Question: {} \nAnswer:',
