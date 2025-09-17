@@ -4,6 +4,8 @@
 
 The capability of in-context learning (ICL) enables large language models (LLMs) to perform novel tasks without parameter updates by conditioning on a few input-output examples. However, collecting high-quality examples for new or challenging tasks can be costly and labor-intensive. In this work, we propose a cost-efficient two-stage pipeline that reduces reliance on LLMs for data labeling. Our approach first leverages readily available cross-task examples to prompt an LLM and pseudo-label a small set of target task instances. We then introduce a graph-based label propagation method that spreads label information to the remaining target examples without additional LLM queries. The resulting fully pseudo-labeled dataset is used to construct in-task demonstrations for ICL. This pipeline combines the flexibility of cross-task supervision with the scalability of LLM-free propagation. Experiments across five tasks demonstrate that our method achieves strong performance while lowering labeling costs.
 
+Our code is constructed based on [Language Models can Exploit Cross-Task In-context Learning for Data-Scarce Novel Tasks]<https://github.com/C-anwoy/Cross-Task-ICL>.
+
 
 **Cross-task ICL Setting**: The implementations of EmbSim and GraphSim:
 
